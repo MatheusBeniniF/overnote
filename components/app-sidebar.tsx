@@ -8,6 +8,7 @@ import {
   SidebarFooter,
   SidebarRail,
 } from "@/components/ui/sidebar";
+import { NotesList } from "./note-list";
 
 export async function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
   const session = await auth();
@@ -16,11 +17,14 @@ export async function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
     name: session?.user?.name ?? "",
     email: session?.user?.email ?? "",
     avatar: session?.user?.image ?? "",
+    id: session?.user?.id ?? "",
   };
 
   return (
     <Sidebar collapsible="icon" {...props}>
-      <SidebarContent>{/* TODO */}</SidebarContent>
+      <SidebarContent>
+        <NotesList userId={user?.id ?? ""} />
+      </SidebarContent>
 
       <SidebarFooter>
         <NavUser user={user} />
