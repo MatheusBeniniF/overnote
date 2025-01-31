@@ -1,29 +1,22 @@
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
-import { nanoid } from "nanoid"; // Gera URLs únicas se necessário
 
 export async function POST(req: Request) {
   try {
     const { title, content, userId, visibility } = await req.json();
 
-    // Validação básica
     if (!title || !userId) {
       return NextResponse.json(
         { error: "O título e o ID do usuário são obrigatórios." },
         { status: 400 }
       );
     }
-
-    // Gera URL pública somente se a visibilidade for "public"
-    const publicUrl = visibility === "public" ? `${nanoid(10)}` : null;
-
     const note = await prisma.note.create({
       data: {
         title,
         content: content || "",
         userId,
         visibility: visibility || "private",
-        publicUrl,
       },
     });
 
@@ -89,12 +82,10 @@ export async function GET(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
   try {
-    // Obtenha os parâmetros `userId` e `id` da query string
     const { searchParams } = new URL(req.url);
     const userId = searchParams.get("userId");
     const id = searchParams.get("id");
 
-    // Verifique se o `userId` e o `id` foram fornecidos
     if (!userId || !id) {
       return NextResponse.json(
         { error: "User ID and Note ID are required" },
@@ -102,14 +93,12 @@ export async function DELETE(req: NextRequest) {
       );
     }
 
-    // Tente encontrar a nota com o `id` fornecido e validar se pertence ao usuário correto
     const note = await prisma.note.findUnique({
       where: {
         id,
       },
     });
 
-    // Se a nota não existir ou não pertencer ao usuário, retorne erro
     if (!note || note.userId !== userId) {
       return NextResponse.json(
         {
@@ -119,7 +108,6 @@ export async function DELETE(req: NextRequest) {
       );
     }
 
-    // Excluir a nota se for válida
     const deletedNote = await prisma.note.delete({
       where: {
         id,
@@ -165,10 +153,7 @@ export async function PATCH(req: NextRequest) {
     }
 
     if (!title) {
-      return NextResponse.json(
-        { error: "Title is required" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Title is required" }, { status: 400 });
     }
 
     if (note.visibility === "public" || note.userId === userId) {

@@ -15,8 +15,8 @@ const fetchNotes = async (userId: string): Promise<Note[]> => {
 
 export const useFetchNotes = (userId: string) => {
   return useQuery({
-    queryKey: ["notes", userId], // Use o ID do usuário para diferenciar consultas
+    queryKey: ["notes", userId],
     queryFn: () => fetchNotes(userId),
-    enabled: !!userId, // Somente executa a consulta se houver um userId válido
+    enabled: !!userId,
   });
 };

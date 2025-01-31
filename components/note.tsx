@@ -123,7 +123,7 @@ const NoteDetails = ({ userId, noteId }: NoteDetailsProps) => {
   };
 
   const handleCopyLink = async () => {
-    const shareUrl = generateShareUrl();
+    const shareUrl = note?.publicUrl ?? generateShareUrl();
 
     if (shareUrl) {
       try {
