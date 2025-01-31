@@ -8,17 +8,19 @@ import Bold from "@tiptap/extension-bold";
 import Italic from "@tiptap/extension-italic";
 import Heading from "@tiptap/extension-heading";
 import Underline from "@tiptap/extension-underline";
-import { Toolbar } from "../toolbar";
+import { Toolbar } from "./toolbar";
 import { useOnClickOutside } from "@/hooks/use-on-click-outside";
-import { SkeletonNote } from "../skeletons";
-import { CreateNoteModal } from "../create-note-modal";
-import { Button } from "./button";
-import { LockIcon, ShareIcon, Trash2Icon, UnlockIcon } from "lucide-react";
+import { SkeletonNote } from "./skeletons";
+import { CreateNoteModal } from "./create-note-modal";
+import { Button } from "./ui/button";
+import { LockIcon, ShareIcon, UnlockIcon } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
-import { Tooltip, TooltipContent, TooltipTrigger } from "./tooltip";
+import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 import { useGetNoteById } from "@/hooks/fetchs/use-get-note";
 import { useUpdateNoteVisibility } from "@/hooks/fetchs/use-update-visibility";
 import { useSaveNote } from "@/hooks/fetchs/use-save-note";
+import { ConfirmationDeleteNoteModal } from "./confirmation-delete-note-modal";
+import { toast } from "react-toastify";
 
 interface NoteDetailsProps {
   userId: string;
@@ -28,6 +30,12 @@ const NoteDetails = ({ userId, noteId }: NoteDetailsProps) => {
   const { data: note, isLoading, error } = useGetNoteById(userId, noteId);
   const { mutate: updateVisibility } = useUpdateNoteVisibility();
   const { mutate: saveNote } = useSaveNote();
+
+  const [showToolbar, setShowToolbar] = useState(false);
+  const [toolbarPosition, setToolbarPosition] = useState({ top: 0, left: 0 });
+  const [isCopying, setIsCopying] = useState(false);
+  const toolbarRef = useRef(null);
+  const editorContainerRef = useRef(null);
 
   const editor = useEditor({
     extensions: [
@@ -84,11 +92,6 @@ const NoteDetails = ({ userId, noteId }: NoteDetailsProps) => {
     };
   }, [editor, handleEditorChange]);
 
-  const [showToolbar, setShowToolbar] = useState(false);
-  const [toolbarPosition, setToolbarPosition] = useState({ top: 0, left: 0 });
-  const toolbarRef = useRef(null);
-  const editorContainerRef = useRef(null);
-
   const handleVisibilityChange = (value: string) => {
     if (!note) return;
 
@@ -98,6 +101,30 @@ const NoteDetails = ({ userId, noteId }: NoteDetailsProps) => {
       visibility: value,
       title: note.title!,
     });
+  };
+
+  const generateShareUrl = () => {
+    if (!note || (note && note.visibility === "private")) return "";
+
+    // You should use the note ID to generate a shareable URL
+    // This URL can be something like "/note/{noteId}" which will open the specific note
+    return `${window.location.origin}/dashboard/${note.id}`;
+  };
+
+  const handleCopyLink = async () => {
+    const shareUrl = generateShareUrl();
+
+    if (shareUrl) {
+      try {
+        await navigator.clipboard.writeText(shareUrl);
+        setIsCopying(true);
+        setTimeout(() => {
+          setIsCopying(false);
+        }, 2000); // Reset the "copied" status after 2 seconds
+      } catch (error) {
+        toast.error("Erro ao copiar o link.");
+      }
+    }
   };
 
   useEffect(() => {
@@ -118,13 +145,33 @@ const NoteDetails = ({ userId, noteId }: NoteDetailsProps) => {
     };
   }, [editor, handleEditorChange]);
 
+  // Show a toast if the user is viewing as a guest
+  useEffect(() => {
+    if (note && userId !== note?.userId) {
+      toast.info(
+        <div className="text-red-500">
+          <span role="img" aria-label="locked">
+            🔒
+          </span>{" "}
+          Você está vendo como visitante, não será possível editar.
+        </div>,
+        {
+          autoClose: 5000,
+        }
+      );
+    }
+  }, [userId, note?.userId]);
+
   useOnClickOutside(toolbarRef, () => setShowToolbar(false));
 
   if (isLoading) {
     return <SkeletonNote />;
   }
   if (error) return <div>{error.message}</div>;
-  if (!isLoading && !note) return <div>Nota não encontrada.</div>;
+  if (!note) {
+    toast.error("Nota não encontrada.");
+    return null;
+  }
 
   return (
     <div className="p-2 h-full">
@@ -137,9 +184,10 @@ const NoteDetails = ({ userId, noteId }: NoteDetailsProps) => {
               <Button
                 variant="outline"
                 disabled={note?.visibility === "private"}
+                onClick={handleCopyLink}
               >
                 <ShareIcon />
-                Compartilhar
+                {isCopying ? "Link copiado!" : "Compartilhar"}
               </Button>
             </TooltipTrigger>
             {note?.visibility === "private" && (
@@ -151,32 +199,26 @@ const NoteDetails = ({ userId, noteId }: NoteDetailsProps) => {
               </TooltipContent>
             )}
           </Tooltip>
-          <div className="flex items-center">
+          <div className="flex items-center gap-2">
             <Switch
               checked={note?.visibility === "public"}
               onCheckedChange={(checked: boolean) =>
                 handleVisibilityChange(checked ? "public" : "private")
               }
-            >
-              <span className="flex items-center justify-between gap-2">
-                {note?.visibility === "public" ? (
-                  <>
-                    <UnlockIcon className="text-green-500" />
-                    <p>Público</p>
-                  </>
-                ) : (
-                  <>
-                    <LockIcon className="text-gray-500" />
-                    <p>Privado</p>
-                  </>
-                )}
-              </span>
-            </Switch>
+            />
+            {note?.visibility === "public" ? (
+              <div className="flex items-center gap-2">
+                <UnlockIcon size={16} />
+                <p>Público</p>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <LockIcon size={16} />
+                <p>Privado</p>
+              </div>
+            )}
           </div>
-          <Button variant="destructive">
-            <Trash2Icon />
-            Deletar
-          </Button>
+          <ConfirmationDeleteNoteModal note={note!} userId={userId} />
         </div>
       </div>
 
@@ -190,7 +232,12 @@ const NoteDetails = ({ userId, noteId }: NoteDetailsProps) => {
       )}
 
       <div ref={editorContainerRef} className="h-full editor-content">
-        <EditorContent editor={editor} />
+        <EditorContent
+          editor={editor}
+          className={`${
+            userId !== note?.userId ? "cursor-not-allowed" : "cursor-pointer"
+          }`}
+        />
       </div>
     </div>
   );

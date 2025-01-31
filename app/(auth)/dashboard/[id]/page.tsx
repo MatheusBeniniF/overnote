@@ -1,5 +1,5 @@
 import { auth } from "@/lib/auth";
-import NoteDetails from "@/components/ui/note";
+import NoteDetails from "@/components/note";
 
 export default async function Page({ params }: { params: { id: string } }) {
   const session = await auth();

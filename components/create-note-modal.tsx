@@ -13,6 +13,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { useCreateNote } from "@/hooks/fetchs/use-create-note";
+import { DialogClose } from "@radix-ui/react-dialog";
 
 interface NoteCreateModalProps {
   userId: string;
@@ -64,9 +65,9 @@ export function CreateNoteModal({ userId }: NoteCreateModalProps) {
         />
 
         <div className="mt-4 flex justify-end gap-2">
-          <Button variant="outline" onClick={() => setTitle("")}>
-            Cancelar
-          </Button>
+          <DialogClose>
+            <Button variant="outline">Cancelar</Button>
+          </DialogClose>
           <Button onClick={handleCreateNote} disabled={loading}>
             {loading ? "Criando..." : "Criar Nota"}
           </Button>

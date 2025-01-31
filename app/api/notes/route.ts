@@ -59,7 +59,7 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ error: "Note not found" }, { status: 404 });
       }
 
-      if (note.userId !== userId) {
+      if (note.visibility === "private" && note.userId !== userId) {
         return NextResponse.json(
           { error: "Unauthorized access to this note" },
           { status: 403 }
@@ -154,7 +154,7 @@ export async function PATCH(req: NextRequest) {
     if (!note || note.userId !== userId) {
       return NextResponse.json(
         {
-          error: "Note not found or user doesn't have permission to delete it",
+          error: "Note not found or user doesn't have permission to update this note",
         },
         { status: 403 }
       );
