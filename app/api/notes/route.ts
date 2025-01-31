@@ -7,9 +7,9 @@ export async function POST(req: Request) {
     const { title, content, userId, visibility } = await req.json();
 
     // Validação básica
-    if (!content || !userId) {
+    if (!title || !userId) {
       return NextResponse.json(
-        { error: "O conteúdo e o ID do usuário são obrigatórios." },
+        { error: "O título e o ID do usuário são obrigatórios." },
         { status: 400 }
       );
     }
@@ -19,8 +19,8 @@ export async function POST(req: Request) {
 
     const note = await prisma.note.create({
       data: {
-        title: title || "Nova Nota",
-        content,
+        title,
+        content: content || "",
         userId,
         visibility: visibility || "private",
         publicUrl,

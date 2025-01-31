@@ -1,15 +1,23 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { debounce } from "lodash";
 import Bold from "@tiptap/extension-bold";
 import Italic from "@tiptap/extension-italic";
-import Heading, { Level } from "@tiptap/extension-heading";
-
+import Heading from "@tiptap/extension-heading";
 import Underline from "@tiptap/extension-underline";
 import { Note } from "@prisma/client";
+import { Toolbar } from "../toolbar";
+import { useOnClickOutside } from "@/hooks/use-on-click-outside";
+import { SkeletonNote } from "../skeletons";
+import { CreateNoteModal } from "../create-note-modal";
+import { Button } from "./button";
+import { LockIcon, ShareIcon, Trash2Icon, UnlockIcon } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { toast } from "react-toastify";
+import { Tooltip, TooltipContent, TooltipTrigger } from "./tooltip";
 
 interface NoteDetailsProps {
   userId: string;
@@ -21,7 +29,6 @@ const NoteDetails = ({ userId, noteId }: NoteDetailsProps) => {
   const [error, setError] = useState<string | null>(null);
   const [showToolbar, setShowToolbar] = useState(false);
   const [toolbarPosition, setToolbarPosition] = useState({ top: 0, left: 0 });
-
   const toolbarRef = useRef(null);
   const editorContainerRef = useRef(null);
 
@@ -42,11 +49,16 @@ const NoteDetails = ({ userId, noteId }: NoteDetailsProps) => {
       if (selection.empty) {
         setShowToolbar(false);
       } else {
-        const { top, left } = selection.$from.pos;
+        const position = selection.$from.pos;
         setShowToolbar(true);
         setToolbarPosition({
-          top: editorContainerRef.current?.offsetTop + top,
-          left: editorContainerRef.current?.offsetLeft + left,
+          top:
+            (editorContainerRef.current as unknown as HTMLElement)?.offsetTop +
+            position -
+            20,
+          left:
+            (editorContainerRef.current as unknown as HTMLElement)?.offsetLeft +
+            position,
         });
       }
     },
@@ -100,10 +112,38 @@ const NoteDetails = ({ userId, noteId }: NoteDetailsProps) => {
     }
   }, 1000);
 
-  const handleEditorChange = () => {
+  const handleEditorChange = useCallback(() => {
     if (editor) {
       const updatedContent = editor.getHTML();
       saveNote(updatedContent);
+    }
+  }, [editor, saveNote]);
+
+  const handleVisibilityChange = async (value: string) => {
+    try {
+      const response = await fetch(`/api/notes`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          visibility: value,
+          userId,
+          id: note?.id,
+          title: note?.title,
+        }),
+      });
+
+      if (response.ok) {
+        const updatedNote = await response.json();
+        setNote(updatedNote);
+        toast.success("Visibilidade atualizada com sucesso!");
+      } else {
+        console.error("Erro ao atualizar a visibilidade da nota.");
+        toast.error("Erro ao atualizar a visibilidade da nota.");
+      }
+    } catch (error) {
+      console.error("Erro ao atualizar a visibilidade da nota:", error);
     }
   };
 
@@ -117,112 +157,81 @@ const NoteDetails = ({ userId, noteId }: NoteDetailsProps) => {
         editor.off("update", handleEditorChange);
       }
     };
-  }, [editor]);
+  }, [editor, handleEditorChange]);
 
-  const handleSave = async () => {
-    if (editor) {
-      const updatedContent = editor.getHTML();
-      const response = await fetch(`/api/notes`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          content: updatedContent,
-          userId,
-          id: note?.id,
-        }),
-      });
+  useOnClickOutside(toolbarRef, () => setShowToolbar(false));
 
-      if (response.ok) {
-        alert("Nota salva com sucesso!");
-      } else {
-        alert("Erro ao salvar a nota.");
-      }
-    }
-  };
-
-  const setHeading = (level: Level) => {
-    editor?.chain().focus().toggleHeading({ level }).run();
-  };
-
-  if (loading) return <div>Carregando...</div>;
+  if (loading) {
+    return <SkeletonNote />;
+  }
   if (error) return <div>{error}</div>;
-  if (!note) return <div>Nota não encontrada.</div>;
+  if (!loading && !note) return <div>Nota não encontrada.</div>;
 
   return (
-    <div className="p-2">
-      <h1 className="text-3xl font-semibold mb-4">{note.title}</h1>
-
-      {/* Toolbar flutuante */}
-      {showToolbar && (
-        <div
-          ref={toolbarRef}
-          style={{
-            position: "absolute",
-            top: toolbarPosition.top,
-            left: toolbarPosition.left,
-            transform: "translateY(-100%)",
-          }}
-          className="bg-white p-2 rounded shadow-md border border-gray-300"
-        >
-          <button
-            onClick={() => editor?.chain().focus().toggleBold().run()}
-            className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded"
-          >
-            <strong>B</strong>
-          </button>
-
-          <button
-            onClick={() => editor?.chain().focus().toggleItalic().run()}
-            className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded"
-          >
-            <em>I</em>
-          </button>
-
-          <button
-            onClick={() => editor?.chain().focus().toggleUnderline().run()}
-            className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded"
-          >
-            <u>U</u>
-          </button>
-
-          <button
-            onClick={() => setHeading(1)}
-            className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded"
-          >
-            H1
-          </button>
-
-          <button
-            onClick={() => setHeading(2)}
-            className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded"
-          >
-            H2
-          </button>
-
-          <button
-            onClick={() => setHeading(3)}
-            className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded"
-          >
-            H3
-          </button>
+    <div className="p-2 h-full">
+      <div className="flex items-center justify-between mb-4">
+        <h1 className="text-3xl font-semibold mb-4">{note?.title}</h1>
+        <div className="flex gap-2">
+          <CreateNoteModal userId={userId} />
+          <Tooltip>
+            <TooltipTrigger>
+              <Button
+                variant="outline"
+                disabled={note?.visibility === "private"}
+              >
+                <ShareIcon />
+                Compartilhar
+              </Button>
+            </TooltipTrigger>
+            {note?.visibility === "private" && (
+              <TooltipContent>
+                <p>
+                  Para compartilhar a anotação, altere a visibilidade para
+                  publica.
+                </p>
+              </TooltipContent>
+            )}
+          </Tooltip>
+          <div className="flex items-center">
+            <Switch
+              checked={note?.visibility === "public"}
+              onCheckedChange={(checked: boolean) =>
+                handleVisibilityChange(checked ? "public" : "private")
+              }
+            >
+              <span className="flex items-center justify-between gap-2">
+                {note?.visibility === "public" ? (
+                  <>
+                    <UnlockIcon className="text-green-500" />
+                    <p>Público</p>
+                  </>
+                ) : (
+                  <>
+                    <LockIcon className="text-gray-500" />
+                    <p>Privado</p>
+                  </>
+                )}
+              </span>
+            </Switch>
+          </div>
+          <Button variant="destructive">
+            <Trash2Icon />
+            Deletar
+          </Button>
         </div>
-      )}
-
-      {/* Editor Content */}
-      <div ref={editorContainerRef} className="mb-6">
-        <EditorContent editor={editor} />
       </div>
 
-      {/* Botão de salvar */}
-      <div className="flex justify-end space-x-4">
-        <button
-          onClick={handleSave}
-          className="px-6 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition duration-300"
-        >
-          Salvar
-        </button>
+      {showToolbar && (
+        <Toolbar
+          ref={toolbarRef}
+          toolbarPosition={toolbarPosition}
+          editor={editor}
+          closeToolbar={() => setShowToolbar(false)}
+        />
+      )}
+
+      <div ref={editorContainerRef} className="h-full editor-content">
+        <EditorContent editor={editor} />
       </div>
     </div>
   );

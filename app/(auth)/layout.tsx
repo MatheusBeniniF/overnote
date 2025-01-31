@@ -17,8 +17,8 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
-import { Button } from "@/components/ui/button";
-import { PlusIcon } from "lucide-react";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 export default async function AuthLayout({
   children,
@@ -33,28 +33,23 @@ export default async function AuthLayout({
     <SidebarProvider>
       <AppSidebar />
       <SidebarInset>
+        <ToastContainer position="top-right" autoClose={3000} />
         <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12">
-          <div className="flex items-center gap-2 px-4">
-            <SidebarTrigger className="-ml-1" />
-
+          <div className="flex items-center gap-2">
+            <SidebarTrigger className="ml-1" />
             <Separator orientation="vertical" className="mr-2 h-4" />
             <Breadcrumb>
               <BreadcrumbList>
                 <BreadcrumbItem className="hidden md:block">
-                  <BreadcrumbPage>Bread</BreadcrumbPage>
+                  <BreadcrumbPage>Dashboard</BreadcrumbPage>
                 </BreadcrumbItem>
                 <BreadcrumbSeparator className="hidden md:block" />
                 <BreadcrumbItem>
-                  <BreadcrumbPage>Crumb</BreadcrumbPage>
+                  <BreadcrumbPage>nota.title</BreadcrumbPage>
                 </BreadcrumbItem>
               </BreadcrumbList>
             </Breadcrumb>
           </div>
-
-          <Button variant="secondary" className="text-end">
-            <PlusIcon />
-            <span className="ml-2">Criar nota</span>
-          </Button>
         </header>
 
         {children}
