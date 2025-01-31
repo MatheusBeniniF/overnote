@@ -6,48 +6,21 @@ import { Button } from "./ui/button";
 import { useSidebar } from "./ui/sidebar";
 import { NotebookTabsIcon } from "lucide-react";
 import { Note } from "@prisma/client";
+import { useFetchNotes } from "@/hooks/fetchs/use-fetch-notes";
 
 interface NotesListProps {
   userId: string;
 }
 
 export const NotesList: React.FC<NotesListProps> = ({ userId }) => {
-  const [notes, setNotes] = useState<Note[]>([]);
-  const [loading, setLoading] = useState<boolean>(false);
-  const [error, setError] = useState<string | null>(null);
   const sidebar = useSidebar();
+  const { data: notes, isLoading, error } = useFetchNotes(userId);
 
   const showFullMessage = sidebar.open && !sidebar.isMobile;
 
-  useEffect(() => {
-    if (!userId) return;
-
-    const fetchNotes = async () => {
-      setLoading(true);
-      setError(null);
-
-      try {
-        const response = await fetch(`/api/notes?userId=${userId}`);
-
-        if (!response.ok) {
-          throw new Error("Erro ao carregar as notas.");
-        }
-
-        const data = await response.json();
-        setNotes(data);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Erro desconhecido.");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchNotes();
-  }, [userId]);
-
-  if (loading)
+  if (isLoading)
     return <div className="text-sm text-gray-500">Carregando...</div>;
-  if (error) return <div className="text-sm text-red-500">{error}</div>;
+  if (error) return <div className="text-sm text-red-500">{error.message}</div>;
 
   return (
     <div className="p-4">
@@ -58,7 +31,7 @@ export const NotesList: React.FC<NotesListProps> = ({ userId }) => {
         )}
       </div>
       <ScrollArea className="max-h-[300px] mt-4">
-        {notes.length === 0 ? (
+        {!notes ? (
           <div className="text-center text-gray-500">
             Você não tem notas ainda.
           </div>

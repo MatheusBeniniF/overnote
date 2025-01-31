@@ -12,6 +12,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { useCreateNote } from "@/hooks/fetchs/use-create-note";
 
 interface NoteCreateModalProps {
   userId: string;
@@ -21,39 +22,24 @@ export function CreateNoteModal({ userId }: NoteCreateModalProps) {
   const [title, setTitle] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const { mutate: createNote } = useCreateNote();
 
-  const handleCreateNote = async () => {
+  const handleCreateNote = () => {
     setLoading(true);
 
-    try {
-      const response = await fetch("/api/notes", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+    createNote(
+      { userId, title },
+      {
+        onSuccess: (data) => {
+          router.push(`/dashboard/${data.id}`);
         },
-        body: JSON.stringify({
-          userId,
-          title,
-          content: "",
-        }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        router.push(`/dashboard/${data.id}`);
-
-        toast.success("Nota criada com sucesso!");
-      } else {
-        const errorData = await response.json();
-        toast.error(errorData.message || "Erro ao criar a nota.");
+        onError: (error) => {
+          toast.error(
+            error instanceof Error ? error.message : "Erro desconhecido."
+          );
+        },
       }
-    } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Erro desconhecido."
-      );
-    } finally {
-      setLoading(false);
-    }
+    );
   };
 
   return (

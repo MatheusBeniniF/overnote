@@ -8,7 +8,6 @@ import Bold from "@tiptap/extension-bold";
 import Italic from "@tiptap/extension-italic";
 import Heading from "@tiptap/extension-heading";
 import Underline from "@tiptap/extension-underline";
-import { Note } from "@prisma/client";
 import { Toolbar } from "../toolbar";
 import { useOnClickOutside } from "@/hooks/use-on-click-outside";
 import { SkeletonNote } from "../skeletons";
@@ -16,21 +15,19 @@ import { CreateNoteModal } from "../create-note-modal";
 import { Button } from "./button";
 import { LockIcon, ShareIcon, Trash2Icon, UnlockIcon } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
-import { toast } from "react-toastify";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./tooltip";
+import { useGetNoteById } from "@/hooks/fetchs/use-get-note";
+import { useUpdateNoteVisibility } from "@/hooks/fetchs/use-update-visibility";
+import { useSaveNote } from "@/hooks/fetchs/use-save-note";
 
 interface NoteDetailsProps {
   userId: string;
   noteId: string;
 }
 const NoteDetails = ({ userId, noteId }: NoteDetailsProps) => {
-  const [note, setNote] = useState<Note | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [showToolbar, setShowToolbar] = useState(false);
-  const [toolbarPosition, setToolbarPosition] = useState({ top: 0, left: 0 });
-  const toolbarRef = useRef(null);
-  const editorContainerRef = useRef(null);
+  const { data: note, isLoading, error } = useGetNoteById(userId, noteId);
+  const { mutate: updateVisibility } = useUpdateNoteVisibility();
+  const { mutate: saveNote } = useSaveNote();
 
   const editor = useEditor({
     extensions: [
@@ -64,88 +61,50 @@ const NoteDetails = ({ userId, noteId }: NoteDetailsProps) => {
     },
   });
 
-  useEffect(() => {
-    const fetchNote = async () => {
-      setLoading(true);
-      setError(null);
-
-      try {
-        const response = await fetch(
-          `/api/notes?userId=${userId}&id=${noteId}`
-        );
-        if (!response.ok) {
-          throw new Error("Erro ao carregar a nota.");
-        }
-
-        const data = await response.json();
-        setNote(data);
-        if (editor) {
-          editor.commands.setContent(data.content);
-        }
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Erro desconhecido.");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchNote();
-  }, [userId, noteId, editor]);
-
-  const saveNote = debounce(async (updatedContent) => {
-    const response = await fetch(`/api/notes`, {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        content: updatedContent,
-        userId,
-        id: note?.id,
-      }),
-    });
-
-    if (response.ok) {
-      console.log("Nota salva com sucesso!");
-    } else {
-      console.error("Erro ao salvar a nota.");
-    }
-  }, 1000);
-
   const handleEditorChange = useCallback(() => {
     if (editor) {
       const updatedContent = editor.getHTML();
-      saveNote(updatedContent);
-    }
-  }, [editor, saveNote]);
-
-  const handleVisibilityChange = async (value: string) => {
-    try {
-      const response = await fetch(`/api/notes`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          visibility: value,
-          userId,
-          id: note?.id,
-          title: note?.title,
-        }),
+      saveNote({
+        userId,
+        noteId: note?.id ?? "",
+        content: updatedContent,
       });
-
-      if (response.ok) {
-        const updatedNote = await response.json();
-        setNote(updatedNote);
-        toast.success("Visibilidade atualizada com sucesso!");
-      } else {
-        console.error("Erro ao atualizar a visibilidade da nota.");
-        toast.error("Erro ao atualizar a visibilidade da nota.");
-      }
-    } catch (error) {
-      console.error("Erro ao atualizar a visibilidade da nota:", error);
     }
+  }, [editor, note, userId, noteId, saveNote]);
+
+  useEffect(() => {
+    if (editor) {
+      editor.on("update", debounce(handleEditorChange, 1000));
+    }
+
+    return () => {
+      if (editor) {
+        editor.off("update", handleEditorChange);
+      }
+    };
+  }, [editor, handleEditorChange]);
+
+  const [showToolbar, setShowToolbar] = useState(false);
+  const [toolbarPosition, setToolbarPosition] = useState({ top: 0, left: 0 });
+  const toolbarRef = useRef(null);
+  const editorContainerRef = useRef(null);
+
+  const handleVisibilityChange = (value: string) => {
+    if (!note) return;
+
+    updateVisibility({
+      userId,
+      noteId: note.id,
+      visibility: value,
+      title: note.title!,
+    });
   };
+
+  useEffect(() => {
+    if (note?.content && editor) {
+      editor.commands.setContent(note.content);
+    }
+  }, [note, editor]);
 
   useEffect(() => {
     if (editor) {
@@ -161,11 +120,11 @@ const NoteDetails = ({ userId, noteId }: NoteDetailsProps) => {
 
   useOnClickOutside(toolbarRef, () => setShowToolbar(false));
 
-  if (loading) {
+  if (isLoading) {
     return <SkeletonNote />;
   }
-  if (error) return <div>{error}</div>;
-  if (!loading && !note) return <div>Nota não encontrada.</div>;
+  if (error) return <div>{error.message}</div>;
+  if (!isLoading && !note) return <div>Nota não encontrada.</div>;
 
   return (
     <div className="p-2 h-full">
