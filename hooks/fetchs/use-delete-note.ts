@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
 
 interface DeleteNoteParams {
@@ -23,11 +24,13 @@ const deleteNoteRequest = async ({ userId, noteId }: DeleteNoteParams) => {
 
 export const useDeleteNote = () => {
     const queryClient = useQueryClient();
+    const router = useRouter();
     return useMutation({
         mutationFn: deleteNoteRequest,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["notes"] });
             toast.success("Nota deletada com sucesso!");
+            router.push("/dashboard");
         },
         onError: () => {
             toast.error("Erro ao deletar a nota.");

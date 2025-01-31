@@ -7,6 +7,7 @@ import { useSidebar } from "./ui/sidebar";
 import { NotebookTabsIcon } from "lucide-react";
 import { Note } from "@prisma/client";
 import { useFetchNotes } from "@/hooks/fetchs/use-fetch-notes";
+import { SkeletonNotesSidebar } from "./skeletons";
 
 interface NotesListProps {
   userId: string;
@@ -18,12 +19,11 @@ export const NotesList: React.FC<NotesListProps> = ({ userId }) => {
 
   const showFullMessage = sidebar.open && !sidebar.isMobile;
 
-  if (isLoading)
-    return <div className="text-sm text-gray-500">Carregando...</div>;
+  if (isLoading) return <SkeletonNotesSidebar />;
   if (error) return <div className="text-sm text-red-500">{error.message}</div>;
 
   return (
-    <div className="p-4">
+    <div className="p-6">
       <div className="flex gap-2 items-center">
         <NotebookTabsIcon size={20} />
         {showFullMessage && (

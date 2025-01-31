@@ -42,14 +42,6 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const userId = searchParams.get("userId");
     const id = searchParams.get("id");
-
-    if (!userId) {
-      return NextResponse.json(
-        { error: "User ID is required" },
-        { status: 400 }
-      );
-    }
-
     if (id) {
       const note = await prisma.note.findUnique({
         where: { id },
@@ -69,12 +61,23 @@ export async function GET(req: NextRequest) {
       return NextResponse.json(note, { status: 200 });
     }
 
-    // Buscar todas as notas associadas ao userId
-    const notes = await prisma.note.findMany({
-      where: { userId },
-    });
+    if (userId) {
+      const notes = await prisma.note.findMany({
+        where: {
+          userId,
+        },
+      });
 
-    return NextResponse.json(notes, { status: 200 });
+      return NextResponse.json(notes, { status: 200 });
+    } else {
+      const publicNotes = await prisma.note.findMany({
+        where: {
+          visibility: "public",
+        },
+      });
+
+      return NextResponse.json(publicNotes, { status: 200 });
+    }
   } catch (error) {
     console.error("Error fetching notes:", error);
     return NextResponse.json(
@@ -137,7 +140,7 @@ export async function PATCH(req: NextRequest) {
   try {
     const { id, title, content, visibility, userId } = await req.json();
 
-    if (!userId) {
+    if (!userId || !id) {
       return NextResponse.json(
         { error: "User ID and Note ID are required" },
         { status: 400 }
@@ -150,28 +153,43 @@ export async function PATCH(req: NextRequest) {
       },
     });
 
-    // Se a nota não existir ou não pertencer ao usuário, retorne erro
-    if (!note || note.userId !== userId) {
+    if (!note) {
+      return NextResponse.json({ error: "Note not found" }, { status: 404 });
+    }
+
+    if (note.visibility === "private" && note.userId !== userId) {
       return NextResponse.json(
-        {
-          error: "Note not found or user doesn't have permission to update this note",
-        },
+        { error: "User doesn't have permission to update this note" },
         { status: 403 }
       );
     }
 
-    const updatedNote = await prisma.note.update({
-      where: {
-        id,
-      },
-      data: {
-        title,
-        content,
-        visibility,
-      },
-    });
+    if (!title) {
+      return NextResponse.json(
+        { error: "Title is required" },
+        { status: 400 }
+      );
+    }
 
-    return NextResponse.json(updatedNote, { status: 200 });
+    if (note.visibility === "public" || note.userId === userId) {
+      const updatedNote = await prisma.note.update({
+        where: {
+          id,
+        },
+        data: {
+          title,
+          content,
+          visibility,
+        },
+      });
+
+      return NextResponse.json(updatedNote, { status: 200 });
+    }
+
+    return NextResponse.json(
+      { error: "You can only update public notes or your own private notes" },
+      { status: 403 }
+    );
   } catch (error) {
     console.error("Error updating note:", error);
     return NextResponse.json(

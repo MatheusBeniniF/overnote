@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
 
 interface UpdateVisibilityParams {
@@ -31,14 +32,17 @@ const updateNoteVisibility = async (params: UpdateVisibilityParams) => {
   return response.json();
 };
 
-export const useUpdateNoteVisibility = () => {
+export const useUpdateNoteVisibility = ({ fromDashboard }: { fromDashboard?: boolean }) => {
   const queryClient = useQueryClient();
+  const router = useRouter();
 
   return useMutation({
     mutationFn: updateNoteVisibility,
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       toast.success("Visibilidade atualizada com sucesso!");
-      queryClient.invalidateQueries({ queryKey: ["note"] }); // Atualiza a nota no cache
+      queryClient.invalidateQueries({ queryKey: [fromDashboard ? "notes" : "note"] });
+
+      router.push(fromDashboard ? "/dashboard" : `/dashboard/${variables.noteId}`);
     },
     onError: () => {
       toast.error("Erro ao atualizar a visibilidade da nota.");

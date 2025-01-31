@@ -4,9 +4,10 @@ interface SaveNoteParams {
   userId: string;
   noteId: string;
   content: string;
+  title: string;
 }
 
-const saveNoteRequest = async ({ userId, noteId, content }: SaveNoteParams) => {
+const saveNoteRequest = async ({ userId, noteId, content, title }: SaveNoteParams) => {
   const response = await fetch(`/api/notes`, {
     method: "PATCH",
     headers: {
@@ -16,6 +17,7 @@ const saveNoteRequest = async ({ userId, noteId, content }: SaveNoteParams) => {
       userId,
       id: noteId,
       content,
+      title,
     }),
   });
 
@@ -32,7 +34,7 @@ export const useSaveNote = () => {
   return useMutation({
     mutationFn: saveNoteRequest,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["note"] });
+      queryClient.invalidateQueries({ queryKey: ["notes"] });
     },
     onError: () => {},
   });
