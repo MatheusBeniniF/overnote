@@ -1,11 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { ScrollArea } from "./ui/scroll-area";
 import { Button } from "./ui/button";
 import { useSidebar } from "./ui/sidebar";
 import { NotebookTabsIcon } from "lucide-react";
-import { Note } from "@prisma/client";
 import { useFetchNotes } from "@/hooks/fetchs/use-fetch-notes";
 import { SkeletonNotesSidebar } from "./skeletons";
 

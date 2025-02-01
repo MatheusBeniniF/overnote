@@ -27,7 +27,14 @@ export const NoteCards = ({ userId }: { userId: string }) => {
   if (error) return <div>Falha ao carregar as notas: {error.message}</div>;
 
   if (!notes || notes.length === 0) {
-    return <div>Você ainda não possui notas.</div>;
+    return (
+      <div className="flex flex-col items-center justify-center h-full text-center">
+        <h1 className="text-xl font-semibold text-gray-800 mb-4">
+          Você ainda não possui notas.
+        </h1>
+        <CreateNoteModal userId={userId} />
+      </div>
+    );
   }
 
   const [privateNotes, publicNotes] = notes.reduce<[Note[], Note[]]>(

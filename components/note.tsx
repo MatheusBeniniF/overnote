@@ -11,7 +11,6 @@ import Underline from "@tiptap/extension-underline";
 import { Toolbar } from "./toolbar";
 import { useOnClickOutside } from "@/hooks/use-on-click-outside";
 import { SkeletonNote } from "./skeletons";
-import { CreateNoteModal } from "./create-note-modal";
 import { Button } from "./ui/button";
 import {
   LockIcon,
@@ -91,7 +90,7 @@ const NoteDetails = ({ userId, noteId }: NoteDetailsProps) => {
         title,
       });
     }
-  }, [editor, note, userId, noteId, saveNote]);
+  }, [editor, saveNote, userId, note?.id, title]);
 
   useEffect(() => {
     if (editor) {
@@ -135,7 +134,7 @@ const NoteDetails = ({ userId, noteId }: NoteDetailsProps) => {
 
         toast.success("Link copiado para a área de transferência.");
       } catch (error) {
-        toast.error("Erro ao copiar o link.");
+        toast.error(`Erro ao copiar o link. ${error}`);
       }
     }
   };

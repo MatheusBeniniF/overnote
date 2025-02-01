@@ -1,5 +1,5 @@
 import type { PropsWithChildren } from "react";
-import { redirect, useParams } from "next/navigation";
+import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { AppSidebar } from "@/components/app-sidebar";
 import { Separator } from "@/components/ui/separator";
@@ -8,7 +8,6 @@ import {
   BreadcrumbItem,
   BreadcrumbList,
   BreadcrumbPage,
-  BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import {
   SidebarInset,
@@ -55,12 +54,6 @@ export default async function AuthLayout({
                     <BreadcrumbPage>Dashboard</BreadcrumbPage>
                   </Link>
                 </BreadcrumbItem>
-                {/* <>
-                  <BreadcrumbSeparator className="hidden md:block" />
-                  <BreadcrumbItem>
-                    <BreadcrumbPage>{noteTitle}</BreadcrumbPage>
-                  </BreadcrumbItem>
-                </> */}
               </BreadcrumbList>
             </Breadcrumb>
           </div>
