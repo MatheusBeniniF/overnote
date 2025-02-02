@@ -271,7 +271,7 @@ const NoteDetails = ({ userId, noteId }: NoteDetailsProps) => {
       )}
 
       <div ref={editorContainerRef} className="h-full editor-content">
-        <EditorContent editor={editor} />
+        <EditorContent editor={editor} className="cursor-pointer" />
       </div>
     </div>
   );
