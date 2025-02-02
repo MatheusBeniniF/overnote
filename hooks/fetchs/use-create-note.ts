@@ -6,7 +6,7 @@ interface CreateNoteParams {
   title: string;
 }
 
-const createNoteRequest = async ({ userId, title }: CreateNoteParams) => {
+const createNoteRequest = async ({ userId, title,  }: CreateNoteParams) => {
   const response = await fetch("/api/notes", {
     method: "POST",
     headers: {
@@ -15,7 +15,6 @@ const createNoteRequest = async ({ userId, title }: CreateNoteParams) => {
     body: JSON.stringify({
       userId,
       title,
-      content: "",
     }),
   });
 

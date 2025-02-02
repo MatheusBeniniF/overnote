@@ -21,13 +21,10 @@ interface NoteCreateModalProps {
 
 export function CreateNoteModal({ userId }: NoteCreateModalProps) {
   const [title, setTitle] = useState("");
-  const [loading, setLoading] = useState(false);
   const router = useRouter();
   const { mutate: createNote } = useCreateNote();
 
   const handleCreateNote = () => {
-    setLoading(true);
-
     createNote(
       { userId, title },
       {
@@ -48,7 +45,7 @@ export function CreateNoteModal({ userId }: NoteCreateModalProps) {
       <DialogTrigger asChild>
         <Button variant="outline">
           <PlusIcon />
-          Criar nota
+          <p className="hidden md:block">Criar nota</p>
         </Button>
       </DialogTrigger>
 
@@ -68,9 +65,7 @@ export function CreateNoteModal({ userId }: NoteCreateModalProps) {
           <DialogClose>
             <Button variant="outline">Cancelar</Button>
           </DialogClose>
-          <Button onClick={handleCreateNote} disabled={loading}>
-            {loading ? "Criando..." : "Criar Nota"}
-          </Button>
+          <Button onClick={handleCreateNote}>Criar Nota</Button>
         </div>
       </DialogContent>
     </Dialog>

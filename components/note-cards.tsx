@@ -13,7 +13,6 @@ import {
 } from "./ui/dropdown-menu";
 import { useDeleteNote } from "@/hooks/fetchs/use-delete-note";
 import { useUpdateNoteVisibility } from "@/hooks/fetchs/use-update-visibility";
-import { CreateNoteModal } from "./create-note-modal";
 
 export const NoteCards = ({ userId }: { userId: string }) => {
   const { data: notes, isLoading, error } = useFetchNotes(userId);
@@ -32,7 +31,6 @@ export const NoteCards = ({ userId }: { userId: string }) => {
         <h1 className="text-xl font-semibold text-gray-800 mb-4">
           Você ainda não possui notas.
         </h1>
-        <CreateNoteModal userId={userId} />
       </div>
     );
   }
@@ -116,7 +114,6 @@ export const NoteCards = ({ userId }: { userId: string }) => {
             <h2 className="text-2xl font-bold text-gray-900 mb-4">
               Notas Públicas
             </h2>
-            <CreateNoteModal userId={userId} />
           </div>
           {renderNotes(publicNotes)}
         </div>
@@ -127,7 +124,6 @@ export const NoteCards = ({ userId }: { userId: string }) => {
             <h2 className="text-2xl font-bold text-gray-900 mb-4">
               Notas Privadas
             </h2>
-            {publicNotes.length === 0 && <CreateNoteModal userId={userId} />}
           </div>
           {renderNotes(privateNotes)}
         </div>
